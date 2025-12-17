@@ -1,5 +1,68 @@
 # JVM
 
+## 目录结构与核心角色
+
+```
+JVM/
+├── main.cpp                # 程序入口，启动虚拟机并触发示例类
+├── classFile/
+│   ├── BootClassLoader.*   # 按路径加载 .class 并触发 <clinit>
+│   └── ClassFileParser.*   # 将 class 字节流解析成 InstanceKlass
+├── Stream/
+│   └── ClassRead.*         # 负责读取文件并顺序提供字节
+├── oop/
+│   ├── InstanceKlass.*     # 映射 JVM 中的类元数据
+│   ├── ConstantPool.*      # 存储解析后的常量池条目
+│   ├── MethodInfo.*        # 描述方法属性、字节码、栈深等
+│   └── 其他 *_Info.*       # 各类属性（字段、接口、CodeAttribute 等）
+├── inteoreter/
+│   ├── BytecodeInterpreter.* # 循环解释字节码
+│   ├── CodeRunBase.*       # 注册并调度解释指令表
+│   ├── CodeRunNative.*     # 管理本地方法实现
+│   └── BytecodeStream.*    # 提供逐字节读取接口
+├── runtime/
+│   ├── JavaThread.*        # 表示 JVM 线程，保存 JavaVFrame 栈
+│   ├── JavaVFrame.*        # 单个方法的栈帧（局部变量+操作数栈）
+│   ├── Threads.*           # 全局当前线程指针
+│   └── CommonValue.*       # 栈或局部变量中的统一数值封装
+├── native/
+│   └── JavaNativeInterface.* # 查找 MethodInfo 并桥接至解释器
+└── util/
+    └── BasicType.h         # JVM 基础类型/常量定义
+```
+
+**类作用速览**
+
+- `BootClassLoader`：维护类路径、判断是否已加载，并在加载后触发 `<clinit>`。
+- `ClassFileParser`：读取 `ClassRead` 提供的字节，将魔数、版本、常量池、方法等填充到 `InstanceKlass`。
+- `InstanceKlass` / `ConstantPool` / `MethodInfo`：共同组成方法区元数据，供解释器随时查询。
+- `BytecodeInterpreter`：根据 `CodeRunBase` 注册的指令处理函数执行字节码。
+- `CodeRunNative`：注册并执行本地方法，如 `System.out.println` 对应的 `write0`。
+- `JavaThread` / `JavaVFrame` / `Threads::curThread`：模拟 JVM 线程及其栈帧，保证方法调用有独立的局部变量与操作数栈。
+- `JavaNativeInterface`：提供 `getMethod`、`callStaticMethod`、`callVirtual` 等接口，让解析器与本地实现协同工作。
+- `ClassRead`：抽象 `.class` 文件为可随机读取的字节序列，是解析器的数据源。
+
+## 交互流程概览
+
+1. **启动阶段（main.cpp）**  
+   `startVM()` 依次调用 `CodeRunBase::initCodeRun()` 与 `CodeRunNative::initCodeRun()`，注册所有解释器指令与本地方法。随后创建 `JavaThread`，赋给 `Threads::curThread`。
+
+2. **类加载**  
+   `BootClassLoader::loadKlass()` 先检查缓存，未命中则使用 `ClassRead::readByPath()` 读取 `.class`，交给 `ClassFileParser::Parser()`，生成 `InstanceKlass` 并缓存。如果类含 `<clinit>`，通过 `JavaNativeInterface::callStaticMethod()` 执行静态初始化。
+
+3. **方法查找与调用**  
+   `JavaNativeInterface::getMethod()` 根据名称和描述符从 `InstanceKlass` 的常量池中定位 `MethodInfo`。静态方法直接 `callStaticMethod`，虚方法/特殊方法则传入参数数组及 this 指针，构建 `JavaVFrame`，压入 `JavaThread::stack`。
+
+4. **字节码解释**  
+   `BytecodeInterpreter::run()` 循环读取 `MethodInfo` 的字节码流。每条指令查找 `CodeRunBase` 注册的处理函数（或本地指令交由 `CodeRunNative`），对当前帧的 `stack` 和 `locals` 做操作，直至遇到返回指令。
+
+5. **返回与清理**  
+   方法执行完后，从当前 `JavaThread` 栈中弹出 `JavaVFrame` 并释放，若有返回值则写回调用方的操作数栈。流程回溯到上一帧或 main 结束进程。
+
+通过上述协作，类加载、元数据、解释执行、线程栈等模块形成闭环，实现了一个可运行的 JVM 雏形。 
+
+---
+
 ## 一、介绍
 
 本项目将尝试性的一步一步实现jvm的主线内容，并对每一次代码的提交进行讲解，每一次讲解都尽可能的假设你一无所知。考虑到来此学习的大部分是Java程序员，所以本项目的C++代码将充满着Java的味道。
