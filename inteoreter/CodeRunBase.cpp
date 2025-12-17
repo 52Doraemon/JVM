@@ -14,6 +14,11 @@ typedef void (*FUNNATIVE)(int paramsCount, char **params);
 
 typedef void (*CODERUN)(JavaThread *javaThread, BytecodeStream *bytecodeStream, int &index);
 
+// 定义静态成员 run。头文件里只有声明，这里才真正分配存储空间。
+// 两者职责不同：头文件声明供其他编译单元知道成员存在，源文件定义负责真正创建该成员。
+// 头文件里的 static CODERUN run[256]; 虽然把类型、名字、长度都写全了，但那只是声明，告诉编译器“这个类里有一个静态数组成员，稍后某处会给它定义”。
+// C++ 规则是：静态数据成员必须在类外“再定义一次”才能分配实际存储空间，否则链接器会找不到实体。
+// 于是整个程序有且仅有一个 opcode -> 函数指针表，供 initCodeRun() 初始化、解释器查表使用。
 CODERUN CodeRunBase::run[256];
 
 void CodeRunBase::initCodeRun() {
