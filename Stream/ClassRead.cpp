@@ -59,4 +59,5 @@ void  ClassRead::readByFreeByte(short len,char* target){
     target[len] = '\0';
 }
 
-ClassRead::ClassRead(char *data) : data(data) {}//构造方法
+ClassRead::ClassRead(char *data) : data(data) { // 使用入参指针初始化成员 data，等价于 this->data = data;
+}//构造方法
