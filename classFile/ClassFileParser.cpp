@@ -4,42 +4,46 @@
 #include "ClassFileParser.h"
 #include "../util/BasicType.h"
 #include "../inteoreter/BytecodeStream.h"
-
+#ifdef _WIN32
+    #include <winsock2.h>
+#else
+    #include <arpa/inet.h>
+#endif
 InstanceKlass *ClassFileParser::Parser(ClassRead *classRead) {
     InstanceKlass *klass = new InstanceKlass;
-    checkAndPutMagic(classRead, klass);//æ ¡éªŒæ˜¯å¦æ˜¯classæ–‡ä»¶
-    checkAndPutVersion(classRead, klass);//æ ¡éªŒç‰ˆæœ¬å·
-    parserConstantPoolCount(classRead, klass);//è§£æå¸¸é‡æ± æ•°é‡
-    parserConstantPool(classRead, klass);//è§£æå¸¸é‡æ± 
-    parserAccessFlags(classRead, klass);//è§£æè®¿é—®æƒé™
-    parserThisClass(classRead, klass);//ç±»å
-    parserSuperClass(classRead, klass);//çˆ¶ç±»å
-    parserInterfacesCount(classRead, klass);//è§£æå‡ºæ¥å£æ•°é‡
-    parserInterfaces(classRead, klass);//æ ¹æ®æ•°é‡è§£ææ¥å£
-    parserFieldsCount(classRead, klass);//è§£æå­—æ®µæ•°é‡
-    parserFieldsInfo(classRead, klass);//æ ¹æ®æ•°é‡è§£æå­—æ®µ
-    parserMethodCount(classRead, klass);//è§£ææ–¹æ³•æ•°é‡
-    parserMethodInfo(classRead, klass);//è§£ææ–¹æ³•
-    parserAttributeCount(classRead, klass);//è§£æå±æ€§æ•°é‡
-    parserAttribute(classRead, klass);//è§£æå±æ€§
+    checkAndPutMagic(classRead, klass);//Ğ£ÑéÊÇ·ñÊÇclassÎÄ¼ş
+    checkAndPutVersion(classRead, klass);//Ğ£Ñé°æ±¾ºÅ
+    parserConstantPoolCount(classRead, klass);//½âÎö³£Á¿³ØÊıÁ¿
+    parserConstantPool(classRead, klass);//½âÎö³£Á¿³Ø
+    parserAccessFlags(classRead, klass);//½âÎö·ÃÎÊÈ¨ÏŞ
+    parserThisClass(classRead, klass);//ÀàÃû
+    parserSuperClass(classRead, klass);//¸¸ÀàÃû
+    parserInterfacesCount(classRead, klass);//½âÎö³ö½Ó¿ÚÊıÁ¿
+    parserInterfaces(classRead, klass);//¸ù¾İÊıÁ¿½âÎö½Ó¿Ú
+    parserFieldsCount(classRead, klass);//½âÎö×Ö¶ÎÊıÁ¿
+    parserFieldsInfo(classRead, klass);//¸ù¾İÊıÁ¿½âÎö×Ö¶Î
+    parserMethodCount(classRead, klass);//½âÎö·½·¨ÊıÁ¿
+    parserMethodInfo(classRead, klass);//½âÎö·½·¨
+    parserAttributeCount(classRead, klass);//½âÎöÊôĞÔÊıÁ¿
+    parserAttribute(classRead, klass);//½âÎöÊôĞÔ
     return klass;
 }
 
 void ClassFileParser::checkAndPutMagic(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setMagic(classRead->readByFourByte());//è¯»å–4ä¸ªå­—èŠ‚å¹¶setè¿›InstanceKlassçš„magicå±æ€§ä¸­
-    if (klass->getMagic() == MAGIC) {//æ ¡éªŒmagicå±æ€§æ˜¯å¦ç­‰äº0xCAFEBABE
-        printf("classæ–‡ä»¶æ ¡éªŒæ­£ç¡®\n");
+    klass->setMagic(classRead->readByFourByte());//¶ÁÈ¡4¸ö×Ö½Ú²¢set½øInstanceKlassµÄmagicÊôĞÔÖĞ
+    if (klass->getMagic() == MAGIC) {//Ğ£ÑémagicÊôĞÔÊÇ·ñµÈÓÚ0xCAFEBABE
+        printf("classÎÄ¼şĞ£ÑéÕıÈ·\n");
         return;
     }
-    printf("classæ–‡ä»¶æ ¡éªŒé”™è¯¯ï¼Œ%X\n", klass->getMagic());
+    printf("classÎÄ¼şĞ£Ñé´íÎó£¬%X\n", klass->getMagic());
 }
 
 void ClassFileParser::checkAndPutVersion(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setMinorVersion(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚ä½œä¸ºæ¬¡ç‰ˆæœ¬å·setè¿›InstanceKlasså±æ€§
-    klass->setMajorVersion(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚ä½œä¸ºä¸»ç‰ˆæœ¬å·setè¿›InstanceKlasså±æ€§
-    printf("æ¬¡ç‰ˆæœ¬å·ï¼š%d\n", klass->getMinorVersion());
-    printf("ä¸»ç‰ˆæœ¬å·ï¼š%d\n", klass->getMajorVersion());
-    switch (klass->getMajorVersion()) {//æ ¡éªŒç‰ˆæœ¬å·æ˜¯å¦åœ¨å…è®¸èŒƒå›´å†…
+    klass->setMinorVersion(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú×÷Îª´Î°æ±¾ºÅset½øInstanceKlassÊôĞÔ
+    klass->setMajorVersion(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú×÷ÎªÖ÷°æ±¾ºÅset½øInstanceKlassÊôĞÔ
+    printf("´Î°æ±¾ºÅ£º%d\n", klass->getMinorVersion());
+    printf("Ö÷°æ±¾ºÅ£º%d\n", klass->getMajorVersion());
+    switch (klass->getMajorVersion()) {//Ğ£Ñé°æ±¾ºÅÊÇ·ñÔÚÔÊĞí·¶Î§ÄÚ
         case 46:
         case 47:
         case 48:
@@ -48,90 +52,90 @@ void ClassFileParser::checkAndPutVersion(ClassRead *classRead, InstanceKlass *kl
         case 51:
         case 52: {
             if (klass->getMinorVersion() == 0) {
-                printf("ç‰ˆæœ¬æ ¡éªŒæ­£ç¡®\n");
+                printf("°æ±¾Ğ£ÑéÕıÈ·\n");
                 return;
             }
         }
     }
-    printf("ç‰ˆæœ¬æ ¡éªŒé”™è¯¯\n");
+    printf("°æ±¾Ğ£Ñé´íÎó\n");
 };
 
 void ClassFileParser::parserConstantPoolCount(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setConstantPoolCount(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚è·å–åˆ°å¸¸é‡æ± çš„æ•°é‡ï¼Œå¹¶setè¿›InstanceKlasså±æ€§
+    klass->setConstantPoolCount(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú»ñÈ¡µ½³£Á¿³ØµÄÊıÁ¿£¬²¢set½øInstanceKlassÊôĞÔ
 };
 
 void ClassFileParser::parserConstantPool(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setConstantPool(new ConstantPool);//ä¸ºå¸¸é‡æ± åˆå§‹åŒ–å†…å­˜ç©ºé—´
+    klass->setConstantPool(new ConstantPool);//Îª³£Á¿³Ø³õÊ¼»¯ÄÚ´æ¿Õ¼ä
     ConstantPool *constantPool = klass->getConstantPool();
-    constantPool->tag = new char[klass->getConstantPoolCount()];//æ ¹æ®å¸¸é‡æ± æ•°é‡åˆå§‹åŒ–å¸¸é‡æ± æ•°æ®åŒºçš„å†…å­˜ç©ºé—´
+    constantPool->tag = new char[klass->getConstantPoolCount()];//¸ù¾İ³£Á¿³ØÊıÁ¿³õÊ¼»¯³£Á¿³ØÊı¾İÇøµÄÄÚ´æ¿Õ¼ä
 
     for (int i = 1; i < klass->getConstantPoolCount(); i++) {
-        unsigned char tag = classRead->readByOneByte();//è¯»å–ä¸€ä¸ªå­—èŠ‚è·å–åˆ°ç±»å‹çš„æ˜ å°„å€¼
-        *(constantPool->tag + i) = tag;//å­˜å‚¨ç±»å‹
-        switch (tag) {//æ ¹æ®ä¸åŒçš„ç±»å‹ï¼Œæœ‰ä¸åŒçš„å¤„ç†æ–¹å¼ï¼Œä¸»è¦æ˜¯è¯»å–çš„å­—èŠ‚æ•°ä¸åŒ
+        unsigned char tag = classRead->readByOneByte();//¶ÁÈ¡Ò»¸ö×Ö½Ú»ñÈ¡µ½ÀàĞÍµÄÓ³ÉäÖµ
+        *(constantPool->tag + i) = tag;//´æ´¢ÀàĞÍ
+        switch (tag) {//¸ù¾İ²»Í¬µÄÀàĞÍ£¬ÓĞ²»Í¬µÄ´¦Àí·½Ê½£¬Ö÷ÒªÊÇ¶ÁÈ¡µÄ×Ö½ÚÊı²»Í¬
             case CONSTANT_Utf8: {
-                unsigned short len = classRead->readByTwoByte();//è¯»ä¸¤ä¸ªå­—èŠ‚ä½œä¸ºutf-8çš„å­—èŠ‚é•¿åº¦
-                char *target = new char[len + 1]; //ç”³è¯·len+1é•¿åº¦çš„å­—èŠ‚å†…å­˜ï¼Œcè¯­è¨€æœ€åä¸€ä½éœ€è¦ç”¨'\0'å¡«å……
-                classRead->readByFreeByte(len, target);//è¯»å–lenä¸ªå­—èŠ‚
-                (constantPool->data[i]) = target;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹utf-8ï¼Œå€¼%s\n", i, constantPool->data[i]);
+                unsigned short len = classRead->readByTwoByte();//¶ÁÁ½¸ö×Ö½Ú×÷Îªutf-8µÄ×Ö½Ú³¤¶È
+                char *target = new char[len + 1]; //ÉêÇëlen+1³¤¶ÈµÄ×Ö½ÚÄÚ´æ£¬cÓïÑÔ×îºóÒ»Î»ĞèÒªÓÃ'\0'Ìî³ä
+                classRead->readByFreeByte(len, target);//¶ÁÈ¡len¸ö×Ö½Ú
+                (constantPool->data[i]) = target;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍutf-8£¬Öµ%s\n", i, constantPool->data[i]);
                 break;
             }
             case CONSTANT_Integer: {
                 char *temp = new char;
-                *temp = classRead->readByFourByte(); //è¯»å–å››ä¸ªå­—èŠ‚
-                constantPool->data[i] = temp;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹Integerï¼Œå€¼%d\n", i, *constantPool->data[i]);
+                *temp = classRead->readByFourByte(); //¶ÁÈ¡ËÄ¸ö×Ö½Ú
+                constantPool->data[i] = temp;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍInteger£¬Öµ%d\n", i, *constantPool->data[i]);
                 break;
             }
             case CONSTANT_Float: {
                 char *temp = new char;
-                *temp = classRead->readByFourByte();//è¯»å–å››ä¸ªå­—èŠ‚
-                constantPool->data[i] = temp;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹Floatï¼Œå€¼%d\n", i, *constantPool->data[i]);
+                *temp = classRead->readByFourByte();//¶ÁÈ¡ËÄ¸ö×Ö½Ú
+                constantPool->data[i] = temp;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍFloat£¬Öµ%d\n", i, *constantPool->data[i]);
                 break;
             }
             case CONSTANT_Long: {
-                printf("æš‚ä¸å¤„ç†\n");
+                printf("Ôİ²»´¦Àí\n");
                 break;
             }
             case CONSTANT_Double: {
-                printf("æš‚ä¸å¤„ç†\n");
+                printf("Ôİ²»´¦Àí\n");
                 break;
             }
             case CONSTANT_Class: {
                 char *temp = new char;
-                *temp = classRead->readByTwoByte();//è¯»å–ä¸¤ä¸ªå­—èŠ‚
-                constantPool->data[i] = temp;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹Classï¼Œå€¼%d\n", i, *constantPool->data[i]);
+                *temp = classRead->readByTwoByte();//¶ÁÈ¡Á½¸ö×Ö½Ú
+                constantPool->data[i] = temp;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍClass£¬Öµ%d\n", i, *constantPool->data[i]);
                 break;
             }
             case CONSTANT_String: {
                 char *temp = new char[3];
-                *temp = classRead->readByTwoByte();//è¯»å–ä¸¤ä¸ªå­—èŠ‚
+                *temp = classRead->readByTwoByte();//¶ÁÈ¡Á½¸ö×Ö½Ú
                 temp[2] = '\0';
-                constantPool->data[i] = temp;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹Stringï¼Œå€¼%d\n", i, *constantPool->data[i]);
+                constantPool->data[i] = temp;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍString£¬Öµ%d\n", i, *constantPool->data[i]);
                 break;
             }
             case CONSTANT_Fieldref:
             case CONSTANT_Methodref:
             case CONSTANT_InterfaceMethodref: {
-                int *temp = new int;//ç”³è¯·å››ä¸ªå­—èŠ‚çš„å†…å­˜ç©ºé—´
-                short classIndex = classRead->readByTwoByte();//è¯»å–ä¸¤ä¸ªå­—èŠ‚
-                short nameAndTypeIndex = classRead->readByTwoByte();//è¯»å–ä¸¤ä¸ªå­—èŠ‚
-                *temp = htonl(classIndex << 16 | nameAndTypeIndex);//å·¦16ä½å­˜å‚¨classIndex å³16ä¸ºå­˜å‚¨nameAndTypeIndex
-                (constantPool->data[i]) = (char *) temp;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹fileã€methodã€Interface Methodrefï¼Œå€¼%X\n", i, htonl(*(int *) constantPool->data[i]));
+                int *temp = new int;//ÉêÇëËÄ¸ö×Ö½ÚµÄÄÚ´æ¿Õ¼ä
+                short classIndex = classRead->readByTwoByte();//¶ÁÈ¡Á½¸ö×Ö½Ú
+                short nameAndTypeIndex = classRead->readByTwoByte();//¶ÁÈ¡Á½¸ö×Ö½Ú
+                *temp = htonl(classIndex << 16 | nameAndTypeIndex);//×ó16Î»´æ´¢classIndex ÓÒ16Îª´æ´¢nameAndTypeIndex
+                (constantPool->data[i]) = (char *) temp;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍfile¡¢method¡¢Interface Methodref£¬Öµ%X\n", i, htonl(*(int *) constantPool->data[i]));
                 break;
             }
             case CONSTANT_NameAndType: {
                 int *temp = new int;
-                short nameIndex = classRead->readByTwoByte();//è¯»å–ä¸¤ä¸ªå­—èŠ‚
-                short descriptorIndex = classRead->readByTwoByte();//è¯»å–ä¸¤ä¸ªå­—èŠ‚
-                *temp = htonl(nameIndex << 16 | descriptorIndex);//å·¦16ä½å­˜å‚¨classIndex å³16ä¸ºå­˜å‚¨nameAndTypeIndex
-                (constantPool->data[i]) = (char *) temp;//å­˜å‚¨åœ¨å¸¸é‡æ± 
-                printf("ç¬¬%dä¸ªï¼Œç±»å‹NameAndTypeï¼Œå€¼%X\n", i, htonl(*(int *) constantPool->data[i]));
+                short nameIndex = classRead->readByTwoByte();//¶ÁÈ¡Á½¸ö×Ö½Ú
+                short descriptorIndex = classRead->readByTwoByte();//¶ÁÈ¡Á½¸ö×Ö½Ú
+                *temp = htonl(nameIndex << 16 | descriptorIndex);//×ó16Î»´æ´¢classIndex ÓÒ16Îª´æ´¢nameAndTypeIndex
+                (constantPool->data[i]) = (char *) temp;//´æ´¢ÔÚ³£Á¿³Ø
+                printf("µÚ%d¸ö£¬ÀàĞÍNameAndType£¬Öµ%X\n", i, htonl(*(int *) constantPool->data[i]));
                 break;
             }
             default:
@@ -142,55 +146,55 @@ void ClassFileParser::parserConstantPool(ClassRead *classRead, InstanceKlass *kl
 };
 
 void ClassFileParser::parserAccessFlags(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setAccessFlags(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚ï¼Œsetè¿›InstanceKlasså±æ€§
-    printf("è®¿é—®æƒé™ï¼š%d\n", klass->getAccessFlags());
+    klass->setAccessFlags(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú£¬set½øInstanceKlassÊôĞÔ
+    printf("·ÃÎÊÈ¨ÏŞ£º%d\n", klass->getAccessFlags());
 };
 
 void ClassFileParser::parserThisClass(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setThisClass(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚ï¼Œsetè¿›InstanceKlasså±æ€§
-    printf("ç±»åï¼š%X\n", klass->getThisClass());
+    klass->setThisClass(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú£¬set½øInstanceKlassÊôĞÔ
+    printf("ÀàÃû£º%X\n", klass->getThisClass());
 };
 
 void ClassFileParser::parserSuperClass(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setSuperClass(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚ï¼Œsetè¿›InstanceKlasså±æ€§
-    printf("çˆ¶ç±»åï¼š%X\n", klass->getSuperClass());
+    klass->setSuperClass(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú£¬set½øInstanceKlassÊôĞÔ
+    printf("¸¸ÀàÃû£º%X\n", klass->getSuperClass());
 };
 
 void ClassFileParser::parserInterfacesCount(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setInterfacesCount(classRead->readByTwoByte());//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚setè¿›InstanceKlassä¸­çš„æ¥å£æ•°é‡å±æ€§
-    printf("æ¥å£æ•°é‡ï¼š%d\n", klass->getInterfacesCount());
+    klass->setInterfacesCount(classRead->readByTwoByte());//Íùºó¶ÁÈ¡Á½¸ö×Ö½Úset½øInstanceKlassÖĞµÄ½Ó¿ÚÊıÁ¿ÊôĞÔ
+    printf("½Ó¿ÚÊıÁ¿£º%d\n", klass->getInterfacesCount());
 }
 
 void ClassFileParser::parserInterfaces(ClassRead *classRead, InstanceKlass *klass) {
     if (klass->getInterfacesCount() == 0) {
-        return;//æœªå®ç°æ¥å£å°±ä¸è§£æäº†
+        return;//Î´ÊµÏÖ½Ó¿Ú¾Í²»½âÎöÁË
     }
     klass->setInterfaces(new InterfacesInfo[klass->getInterfacesCount()]);
     InterfacesInfo *interfaces = klass->getInterfaces();
     for (int i = 0; i < klass->getInterfacesCount(); i++) {
-        unsigned short constantPoolIndex = classRead->readByTwoByte();//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚ä½œä¸ºå¸¸é‡æ± ç´¢å¼•
-        int index = *(klass->getConstantPool()->data[constantPoolIndex]);//è·å–æ–°çš„å¸¸é‡æ± ç´¢å¼•
-        string name = klass->getConstantPool()->data[index];//ç¬¬äºŒæ¬¡ç´¢å¼•å–å¾—å…¨é™å®šå
-        printf("ç¬¬%dä¸ªæ¥å£ï¼Œname:%s,ç´¢å¼•ä½ç½®ï¼š%d", i + 1, name.c_str(), constantPoolIndex);
-        *(interfaces + i) = *(new InterfacesInfo(constantPoolIndex, name));//å°†æ¥å£setè¿›InstanceKlasså±æ€§ä¸­
+        unsigned short constantPoolIndex = classRead->readByTwoByte();//Íùºó¶ÁÈ¡Á½¸ö×Ö½Ú×÷Îª³£Á¿³ØË÷Òı
+        int index = *(klass->getConstantPool()->data[constantPoolIndex]);//»ñÈ¡ĞÂµÄ³£Á¿³ØË÷Òı
+        string name = klass->getConstantPool()->data[index];//µÚ¶ş´ÎË÷ÒıÈ¡µÃÈ«ÏŞ¶¨Ãû
+        printf("µÚ%d¸ö½Ó¿Ú£¬name:%s,Ë÷ÒıÎ»ÖÃ£º%d", i + 1, name.c_str(), constantPoolIndex);
+        *(interfaces + i) = *(new InterfacesInfo(constantPoolIndex, name));//½«½Ó¿Úset½øInstanceKlassÊôĞÔÖĞ
     }
 };
 
 void ClassFileParser::parserFieldsCount(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setFieldsCount(classRead->readByTwoByte());//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚setè¿›InstanceKlassä¸­çš„å­—æ®µæ•°é‡å±æ€§
-    printf("å­—æ®µæ•°é‡ï¼š%d\n", klass->getFieldsCount());
+    klass->setFieldsCount(classRead->readByTwoByte());//Íùºó¶ÁÈ¡Á½¸ö×Ö½Úset½øInstanceKlassÖĞµÄ×Ö¶ÎÊıÁ¿ÊôĞÔ
+    printf("×Ö¶ÎÊıÁ¿£º%d\n", klass->getFieldsCount());
 }
 
 void ClassFileParser::parserFieldsInfo(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setFieldsInfo(new FieldsInfo[klass->getFieldsCount()]);//æŒ‰ç…§å­—æ®µæ•°é‡åˆå§‹åŒ–å­—æ®µå†…å­˜ç©ºé—´
+    klass->setFieldsInfo(new FieldsInfo[klass->getFieldsCount()]);//°´ÕÕ×Ö¶ÎÊıÁ¿³õÊ¼»¯×Ö¶ÎÄÚ´æ¿Õ¼ä
     FieldsInfo *fieldsInfo = klass->getFieldsInfo();
-    for (int i = 0; i < klass->getFieldsCount(); i++) {//å¾ªç¯å­—æ®µæ•°é‡countæ¬¡ï¼Œè§£æå­—æ®µ
+    for (int i = 0; i < klass->getFieldsCount(); i++) {//Ñ­»·×Ö¶ÎÊıÁ¿count´Î£¬½âÎö×Ö¶Î
         FieldsInfo *fields = (fieldsInfo + i);
-        fields->setAccessFlag(classRead->readByTwoByte());//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚setè¿›FieldsInfoçš„è®¿é—®æƒé™
-        fields->setNameIndex(classRead->readByTwoByte());//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚setè¿›FieldsInfoçš„name
-        fields->setDescriptorIndex(classRead->readByTwoByte());//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚setè¿›FieldsInfoçš„ç±»å‹æè¿°
-        fields->setAttributesCount(classRead->readByTwoByte());//å¾€åè¯»å–ä¸¤ä¸ªå­—èŠ‚setè¿›FieldsInfoçš„é™„åŠ å±æ€§æ•°é‡
-        printf("field è§£æï¼š\n access:%X,\n nameIndex:%X\n descriptorIndex:%X \n attributesCount:%X\n",
+        fields->setAccessFlag(classRead->readByTwoByte());//Íùºó¶ÁÈ¡Á½¸ö×Ö½Úset½øFieldsInfoµÄ·ÃÎÊÈ¨ÏŞ
+        fields->setNameIndex(classRead->readByTwoByte());//Íùºó¶ÁÈ¡Á½¸ö×Ö½Úset½øFieldsInfoµÄname
+        fields->setDescriptorIndex(classRead->readByTwoByte());//Íùºó¶ÁÈ¡Á½¸ö×Ö½Úset½øFieldsInfoµÄÀàĞÍÃèÊö
+        fields->setAttributesCount(classRead->readByTwoByte());//Íùºó¶ÁÈ¡Á½¸ö×Ö½Úset½øFieldsInfoµÄ¸½¼ÓÊôĞÔÊıÁ¿
+        printf("field ½âÎö£º\n access:%X,\n nameIndex:%X\n descriptorIndex:%X \n attributesCount:%X\n",
                fields->getAccessFlag(), fields->getNameIndex(), fields->getDescriptorIndex(),
                fields->getAttributesCount());
     }
@@ -198,46 +202,46 @@ void ClassFileParser::parserFieldsInfo(ClassRead *classRead, InstanceKlass *klas
 
 void ClassFileParser::parserMethodCount(ClassRead *classRead, InstanceKlass *klass) {
     klass->setMethodCount(classRead->readByTwoByte());
-    printf("æ–¹æ³•æ•°é‡ï¼š%d\n", klass->getMethodCount());
+    printf("·½·¨ÊıÁ¿£º%d\n", klass->getMethodCount());
 };
 
 void ClassFileParser::parserMethodInfo(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setMethodInfo(new MethodInfo[klass->getMethodCount()]);//åˆå§‹åŒ–InstanceKlassä¸­çš„methodInfoçš„å†…å­˜ç©ºé—´
+    klass->setMethodInfo(new MethodInfo[klass->getMethodCount()]);//³õÊ¼»¯InstanceKlassÖĞµÄmethodInfoµÄÄÚ´æ¿Õ¼ä
     for (int i = 0; i < klass->getMethodCount(); i++) {
         MethodInfo *method = new MethodInfo;
-        method->setBelongKlass(klass);//å°†æ–¹æ³•ä¸æ‰€å±InstanceKlasså…³è”
-        method->setAccessFlags(classRead->readByTwoByte());//å­˜å‚¨æ–¹æ³•çš„è®¿é—®æƒé™
-        method->setNameIndex(classRead->readByTwoByte());//å­˜å‚¨æ–¹æ³•çš„è®¿é—®æƒé™
-        method->setMethodName((string) klass->getConstantPool()->data[method->getNameIndex()]);//å­˜å‚¨æ–¹æ³•çš„åå­—
-        printf("è§£ææ–¹æ³•%s\n", method->getMethodName().c_str());
-        method->setDescriptorIndex(classRead->readByTwoByte());//å­˜å‚¨æ–¹æ³•çš„æè¿°ï¼ˆåŒ…å«äº†å‚æ•°ã€è¿”å›å€¼ï¼‰
-        method->setAttributesCount(classRead->readByTwoByte());//å­˜å‚¨å±æ€§æ•°é‡
+        method->setBelongKlass(klass);//½«·½·¨ÓëËùÊôInstanceKlass¹ØÁª
+        method->setAccessFlags(classRead->readByTwoByte());//´æ´¢·½·¨µÄ·ÃÎÊÈ¨ÏŞ
+        method->setNameIndex(classRead->readByTwoByte());//´æ´¢·½·¨µÄ·ÃÎÊÈ¨ÏŞ
+        method->setMethodName((string) klass->getConstantPool()->data[method->getNameIndex()]);//´æ´¢·½·¨µÄÃû×Ö
+        printf("½âÎö·½·¨%s\n", method->getMethodName().c_str());
+        method->setDescriptorIndex(classRead->readByTwoByte());//´æ´¢·½·¨µÄÃèÊö£¨°üº¬ÁË²ÎÊı¡¢·µ»ØÖµ£©
+        method->setAttributesCount(classRead->readByTwoByte());//´æ´¢ÊôĞÔÊıÁ¿
         method->initCodeAttributeInfo();
         *(klass->getMethodInfo() + i) = *method;
         for (int j = 0; j < method->getAttributesCount(); j++) {
             CodeAttributeInfo *codeAttributeInfo = new CodeAttributeInfo;
-            codeAttributeInfo->setAttrNameIndex(classRead->readByTwoByte());//å­˜å‚¨å±æ€§åå­—çš„å¸¸é‡æ± ç´¢å¼•
-            codeAttributeInfo->setAttrLength(classRead->readByFourByte());//å­˜å‚¨å±æ€§é•¿åº¦
-            codeAttributeInfo->setMaxStack(classRead->readByTwoByte());//å­˜å‚¨æœ€å¤§æ ˆæ·±åº¦
-            codeAttributeInfo->setMaxLocals(classRead->readByTwoByte());//å­˜å‚¨å±€éƒ¨å˜é‡è¡¨æ•°é‡
-            codeAttributeInfo->setCodeLength(classRead->readByFourByte());//å­˜å‚¨æŒ‡ä»¤æ•°é‡
+            codeAttributeInfo->setAttrNameIndex(classRead->readByTwoByte());//´æ´¢ÊôĞÔÃû×ÖµÄ³£Á¿³ØË÷Òı
+            codeAttributeInfo->setAttrLength(classRead->readByFourByte());//´æ´¢ÊôĞÔ³¤¶È
+            codeAttributeInfo->setMaxStack(classRead->readByTwoByte());//´æ´¢×î´óÕ»Éî¶È
+            codeAttributeInfo->setMaxLocals(classRead->readByTwoByte());//´æ´¢¾Ö²¿±äÁ¿±íÊıÁ¿
+            codeAttributeInfo->setCodeLength(classRead->readByFourByte());//´æ´¢Ö¸ÁîÊıÁ¿
             BytecodeStream *bytecodeStream = new BytecodeStream(method, codeAttributeInfo,
                                                                 codeAttributeInfo->getCodeLength(), 0,
                                                                 new char[codeAttributeInfo->getCodeLength()]);
-            classRead->readByFreeByte(codeAttributeInfo->getCodeLength(), bytecodeStream->getCodes()); //é‡ç‚¹ï¼š å°†æ–¹æ³•çš„JVMæŒ‡ä»¤å­˜å‚¨åœ¨bytecodeStream
+            classRead->readByFreeByte(codeAttributeInfo->getCodeLength(), bytecodeStream->getCodes()); //ÖØµã£º ½«·½·¨µÄJVMÖ¸Áî´æ´¢ÔÚbytecodeStream
             codeAttributeInfo->setCode(bytecodeStream);
-            printf("\tç¬¬%dä¸ªå±æ€§ï¼Œaccess flag:%X name index : %X  stack:%X container:%X  code length:%X \n", j,
+            printf("\tµÚ%d¸öÊôĞÔ£¬access flag:%X name index : %X  stack:%X container:%X  code length:%X \n", j,
                    method->getAccessFlags(), codeAttributeInfo->getAttrNameIndex(), codeAttributeInfo->getMaxStack(),
                    codeAttributeInfo->getMaxLocals(), codeAttributeInfo->getCodeLength());
-            codeAttributeInfo->setExceptionTableLength(classRead->readByTwoByte());//å­˜å‚¨Exceptionè¡¨é•¿åº¦ï¼Œæ­¤å¤„æš‚æ—¶ä¸º0ï¼Œå› ä¸ºæˆ‘ä»¬æ²¡æœ‰ä»»ä½•å¼‚å¸¸éœ€è¦å¤„ç†
-            codeAttributeInfo->setAttributesCount(classRead->readByTwoByte());//å­˜å‚¨å±æ€§é•¿åº¦
+            codeAttributeInfo->setExceptionTableLength(classRead->readByTwoByte());//´æ´¢Exception±í³¤¶È£¬´Ë´¦ÔİÊ±Îª0£¬ÒòÎªÎÒÃÇÃ»ÓĞÈÎºÎÒì³£ĞèÒª´¦Àí
+            codeAttributeInfo->setAttributesCount(classRead->readByTwoByte());//´æ´¢ÊôĞÔ³¤¶È
             method->setAttributeInfo(codeAttributeInfo, j);
-            for (int k = 0; k < codeAttributeInfo->getAttributesCount(); k++) {//å¾ªç¯è§£æå±æ€§
+            for (int k = 0; k < codeAttributeInfo->getAttributesCount(); k++) {//Ñ­»·½âÎöÊôĞÔ
                 int nameIndex = classRead->readByTwoByte();
                 string attrName = klass->getConstantPool()->data[nameIndex];
-                if ("LineNumberTable" == attrName) {//è§£æLineNumberTable
+                if ("LineNumberTable" == attrName) {//½âÎöLineNumberTable
                     parserLineNumberTable(classRead, codeAttributeInfo, attrName, nameIndex, klass);
-                } else if ("LocalVariableTable" == attrName) {//è§£æLocalVariableTable
+                } else if ("LocalVariableTable" == attrName) {//½âÎöLocalVariableTable
                     parseLocalVariableTable(classRead, codeAttributeInfo, attrName, nameIndex, klass);
                 }
             }
@@ -266,7 +270,7 @@ void ClassFileParser::parserLineNumberTable(ClassRead *classRead, CodeAttributeI
                lineNumberTable->getAttributeLength(), lineNumberTable->getTableLen());
         item->setStartPc(classRead->readByTwoByte());
         item->setLineNumber(classRead->readByTwoByte());
-        printf("\t\t\tç¬¬%dä¸ªå±æ€§ï¼Œstart pc : %d,line numnber:%d\n", i, item->getStartPc(), item->getLineNumber());
+        printf("\t\t\tµÚ%d¸öÊôĞÔ£¬start pc : %d,line numnber:%d\n", i, item->getStartPc(), item->getLineNumber());
     }
 
 };
@@ -291,7 +295,7 @@ void ClassFileParser::parseLocalVariableTable(ClassRead *classRead, CodeAttribut
         item->setNameIndex(classRead->readByTwoByte());
         item->setDescriptorIndex(classRead->readByTwoByte());
         item->setIndex(classRead->readByTwoByte());
-        printf("\t\tLocalVariableTable:ç¬¬%dä¸ªå±æ€§ï¼Œstart pc:%d,length:%d,name index:%d,descrip:%d,index:%d\n", i,
+        printf("\t\tLocalVariableTable:µÚ%d¸öÊôĞÔ£¬start pc:%d,length:%d,name index:%d,descrip:%d,index:%d\n", i,
                item->getStartPc(), item->getLength(),
                item->getNameIndex(), item->getDescriptorIndex(), item->getIndex());
     }
@@ -299,8 +303,8 @@ void ClassFileParser::parseLocalVariableTable(ClassRead *classRead, CodeAttribut
 };
 
 void ClassFileParser::parserAttributeCount(ClassRead *classRead, InstanceKlass *klass) {
-    klass->setAttributeCount(classRead->readByTwoByte());//è¯»å–ä¸¤ä¸ªå­—èŠ‚å°†å±æ€§æ•°é‡å­˜å‚¨åœ¨InstanceKlassä¸­
-    printf("è§£æå±æ€§ï¼Œæ•°é‡%d\n", klass->getAttributeCount());
+    klass->setAttributeCount(classRead->readByTwoByte());//¶ÁÈ¡Á½¸ö×Ö½Ú½«ÊôĞÔÊıÁ¿´æ´¢ÔÚInstanceKlassÖĞ
+    printf("½âÎöÊôĞÔ£¬ÊıÁ¿%d\n", klass->getAttributeCount());
 };
 
 void ClassFileParser::parserAttribute(ClassRead *classRead, InstanceKlass *klass) {
@@ -309,22 +313,22 @@ void ClassFileParser::parserAttribute(ClassRead *classRead, InstanceKlass *klass
         string attrName = klass->getConstantPool()->data[nameIndex];
         if ("SourceFile" == attrName) {
             printf("\tSourceFile\n");
-            parseSourceFile(classRead, klass, nameIndex, i);//è§£æSourceFileå±æ€§
+            parseSourceFile(classRead, klass, nameIndex, i);//½âÎöSourceFileÊôĞÔ
         } else {
-            printf("\tæ— æ³•è¯†åˆ«çš„å±æ€§:%X\n", attrName.c_str());
+            printf("\tÎŞ·¨Ê¶±ğµÄÊôĞÔ:%X\n", attrName.c_str());
         }
     }
 };
 
 void ClassFileParser::parseSourceFile(ClassRead *classRead, InstanceKlass *klass, short nameIndex, short index) {
-    klass->setAttributeInfo(new AttributeInfo[klass->getAttributeCount()]);//åˆå§‹åŒ–å†…å­˜ç©ºé—´æ¥å­˜å‚¨å±æ€§
+    klass->setAttributeInfo(new AttributeInfo[klass->getAttributeCount()]);//³õÊ¼»¯ÄÚ´æ¿Õ¼äÀ´´æ´¢ÊôĞÔ
     AttributeInfo *attributeInfo= klass->getAttributeInfo();
     *(klass->getAttributeInfo() + index) = *attributeInfo;
-    attributeInfo->setAttributeNameIndex(nameIndex);//å­˜å‚¨å±æ€§nameçš„å¸¸é‡æ± ç´¢å¼•
-    attributeInfo->setAttributeLength(classRead->readByFourByte());//å­˜å‚¨å±æ€§é•¿åº¦length
+    attributeInfo->setAttributeNameIndex(nameIndex);//´æ´¢ÊôĞÔnameµÄ³£Á¿³ØË÷Òı
+    attributeInfo->setAttributeLength(classRead->readByFourByte());//´æ´¢ÊôĞÔ³¤¶Èlength
     attributeInfo->initContainer();
-    *(attributeInfo->getContainer()) = classRead->readByTwoByte();//å­˜å‚¨æ–‡ä»¶åçš„å¸¸é‡æ± ç´¢å¼•
-    printf("\t\tç¬¬%dä¸ªå±æ€§ï¼Œ%s:nameIndex:%d,length:%d,data:%d,(%s)\n", index, klass->getConstantPool()->data[nameIndex],
+    *(attributeInfo->getContainer()) = classRead->readByTwoByte();//´æ´¢ÎÄ¼şÃûµÄ³£Á¿³ØË÷Òı
+    printf("\t\tµÚ%d¸öÊôĞÔ£¬%s:nameIndex:%d,length:%d,data:%d,(%s)\n", index, klass->getConstantPool()->data[nameIndex],
            attributeInfo->getAttributeNameIndex(), attributeInfo->getAttributeLength(), *attributeInfo->getContainer(),
            klass->getConstantPool()->data[*attributeInfo->getContainer()]);
 };

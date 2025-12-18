@@ -12,7 +12,7 @@
 #include "AttributeInfo.h"
 #include "../runtime/CommonValue.h"
 
-extern class InstanceOop;
+class InstanceOop;
 
 class InstanceKlass {
     int magic; //魔数，CAFEBABE:用来校验是否是.class文件

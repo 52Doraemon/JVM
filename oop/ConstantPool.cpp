@@ -3,6 +3,11 @@
 //
 
 #include "ConstantPool.h"
+#ifdef _WIN32
+    #include <winsock2.h>
+#else
+    #include <arpa/inet.h>
+#endif
 
 /**
  * 根据JVM指令中的操作数 获取常量池中的类的全限定名

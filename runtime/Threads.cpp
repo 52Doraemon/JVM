@@ -3,4 +3,5 @@
 //
 
 #include "Threads.h"
+#include <cstddef>
 JavaThread* Threads::curThread = NULL;

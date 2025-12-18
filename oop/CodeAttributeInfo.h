@@ -7,7 +7,7 @@
 #ifndef JVM_CODEATTRIBUTEINFO_H
 #define JVM_CODEATTRIBUTEINFO_H
 
-extern class BytecodeStream;
+class BytecodeStream;
 using namespace std;
 class CodeAttributeInfo {
     int attrNameIndex;

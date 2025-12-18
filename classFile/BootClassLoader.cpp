@@ -6,7 +6,7 @@
 #include "ClassFileParser.h"
 #include "../native/JavaNativeInterface.h"
 
-string BootClassLoader::prePath = "/Users/yummy/CLionProjects/JVM/";
+string BootClassLoader::prePath = "C:\\Users\\11374645\\CLionProjects\\JVM\\";
 map<string, InstanceKlass *> BootClassLoader::allClass;
 
 InstanceKlass *BootClassLoader::loadKlass(string& p) {

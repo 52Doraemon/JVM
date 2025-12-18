@@ -1,5 +1,10 @@
 #include "ClassRead.h"
 #include <iostream>
+#ifdef _WIN32
+    #include <winsock2.h>
+#else
+    #include <arpa/inet.h>
+#endif
 /**
  * 所用到的 htonl() 函数 为大端与小端转换 ，无需深究
  */

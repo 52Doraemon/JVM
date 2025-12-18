@@ -5,8 +5,8 @@
 #ifndef JVM_METHODINFO_H
 #define JVM_METHODINFO_H
 using namespace std;
-extern class CodeAttributeInfo;
-extern class InstanceKlass ;
+class CodeAttributeInfo;
+class InstanceKlass ;
 class MethodInfo {
     InstanceKlass* belongKlass;
     short accessFlags;

@@ -9,6 +9,7 @@
 #include "../util/BasicType.h"
 #include "../native/JavaNativeInterface.h"
 #include "CodeRunNative.h"
+#include <cstring>
 
 typedef void (*FUNNATIVE)(int paramsCount, char **params);
 
